@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+    <title>Interactive Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white flex justify-center items-center h-screen">
+
+    <div class="bg-black p-5 rounded-md max-w-lg w-full shadow-lg">
+       
+        <div class="flex space-x-2 mb-2">
+            <div class="h-3 w-3 rounded-full bg-red-500"></div>
+            <div class="h-3 w-3 rounded-full bg-yellow-500"></div>
+            <div class="h-3 w-3 rounded-full bg-green-500"></div>
+        </div>
+
+        
+        <div id="terminal" class="font-mono text-sm leading-loose">
+            <p>Welcome To My Portfolio</p>
+            <p>Type <span class="text-green-400">help</span> to see available commands.</p>
+            <br>
+        </div>
+
+        <!-- Input Field -->
+        <div class="flex">
+            <span class="text-green-400 font-bold">pra4c@terminal:~$</span>
+            <input id="input" type="text" class="bg-black text-white outline-none ml-2 w-full" autofocus>
+        </div>
+    </div>
+
+    <script>
+        const terminal = document.getElementById("terminal");
+        const inputField = document.getElementById("input");
+
+        inputField.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                const command = inputField.value.trim();
+                inputField.value = "";
+
+                // Process command
+                let response = `<span class="text-green-400">pra4c@terminal:~$</span> ${command}`;
+
+                if (command.toLowerCase() === "whoami") {
+                    response += `<br><span class="text-blue-300">Hello i am Prazwal Chapagain , "If you are here, then you surely know me or want to know about me."</span>`;
+                } else if (command.toLowerCase() === "clear") {
+                    terminal.innerHTML = "";
+                    return;
+                } else if (command.toLowerCase() === "help") {
+                    response += `<br>Available commands: <span class="text-yellow-300">whoami, clear, help</span>`;
+                } else {
+                    response += `<br><span class="text-red-400">Command not found. Try 'help'.</span>`;
+                }
+
+                // Add output to terminal
+                terminal.innerHTML += `<p>${response}</p>`;
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        });
+    </script>
+
+</body>
+</html>
