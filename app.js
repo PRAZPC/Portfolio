@@ -1,24 +1,23 @@
 // Load particles config from JSON and initialize
-particlesJS.load('particles-js', 'particles-config.json', function() {
+particlesJS.load('particles-js', 'particles-config.json', function () {
   console.log('particles.js loaded');
 });
 
 let scene, camera, renderer, macbook, raycaster, mouse, controls;
 let mixer, clock, openAction;
 let lidIsOpen = false;
-let forceOpenLid = false; 
+let forceOpenLid = false;
 
-// Zoom control variables
 let zoomingIn = false;
 let zoomProgress = 0;
-const zoomDuration = 2; // seconds
+const zoomDuration = 2;
 
-// Camera initial and target positions/lookAt
 const initialCameraPos = new THREE.Vector3();
-const initialLookAtPos = new THREE.Vector3(0, 0, 0); // initial look at origin
+const initialLookAtPos = new THREE.Vector3(0, 0, 0);
 
 let targetCameraPos = new THREE.Vector3();
 let targetLookAtPos = new THREE.Vector3();
+let waitForAnimationBeforeZoom = false;
 
 init();
 
@@ -31,9 +30,8 @@ async function init() {
   scene.add(directionalLight);
 
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 15, 40); // initial camera pos higher & farther
+  camera.position.set(0, 15, 40);
   camera.lookAt(initialLookAtPos);
-
   initialCameraPos.copy(camera.position);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -59,7 +57,7 @@ async function init() {
     });
 
     macbook = model.scene;
-    macbook.scale.set(120, 120, 120); // bigger scale
+    macbook.scale.set(120, 120, 120);
     macbook.position.y = -2;
 
     macbook.traverse(child => {
@@ -71,24 +69,9 @@ async function init() {
 
     scene.add(macbook);
 
-    // Find screen mesh by name (case-insensitive)
-    let screenMesh = null;
-    macbook.traverse(child => {
-      if (child.isMesh && child.name.toLowerCase().includes("screen")) {
-        screenMesh = child;
-      }
-    });
-
-    if (!screenMesh) {
-      console.warn("Screen mesh not found by name. Using default target.");
-      targetLookAtPos.set(0, 3, 0);
-      targetCameraPos.set(0, 10, 12);
-    } else {
-      // Get world position of screen mesh center
-      screenMesh.getWorldPosition(targetLookAtPos);
-      // Offset camera position a bit in front and above screen
-      targetCameraPos.copy(targetLookAtPos).add(new THREE.Vector3(0, 1, 2));
-    }
+    
+    targetLookAtPos.set(0, 3, 0);
+    targetCameraPos.set(0, 10, 12);
 
     mixer = new THREE.AnimationMixer(macbook);
     if (model.animations.length > 0) {
@@ -125,25 +108,23 @@ function onMouseMove(event) {
 }
 
 function onKeyDown(event) {
-  if (event.key === 'Enter' && !zoomingIn) {
+  if (event.key === 'Enter' && !zoomingIn && !waitForAnimationBeforeZoom) {
     camera.position.copy(initialCameraPos);
     camera.lookAt(initialLookAtPos);
-    
     controls.update();
+
     forceOpenLid = true;
     lidIsOpen = true;
-    
-    // Force the lid to open immediately
+
     if (mixer && openAction) {
       openAction.reset();
       openAction.paused = false;
       openAction.play();
       openAction.time = 0;
-      openAction.timeScale = 3; // Speed up the animation
+      openAction.timeScale = 3;
     }
-    
-    zoomingIn = true;
-    zoomProgress = 0;
+
+    waitForAnimationBeforeZoom = true;
   }
 }
 
@@ -153,15 +134,12 @@ function animate() {
 
   if (mixer && openAction) {
     mixer.update(delta);
-    
-    // When forceOpenLid is true, let the animation play naturally
+
     if (forceOpenLid) {
-      // Don't interfere with the animation, let it play
       if (openAction.time >= openAction.getClip().duration) {
         openAction.paused = true;
       }
     } else {
-      // Original mouse hover logic
       if (lidIsOpen) {
         if (openAction.time < 6) {
           openAction.paused = false;
@@ -178,15 +156,31 @@ function animate() {
     }
   }
 
+ 
+  if (waitForAnimationBeforeZoom && openAction && openAction.time >= 0.5) {
+    
+    targetLookAtPos.set(-0.03, 10, -15); // manual coordinates
+
+    // Offset camera slightly above and in front
+    targetCameraPos.set(
+      targetLookAtPos.x,
+      targetLookAtPos.y + 2.5,
+      targetLookAtPos.z + 6
+    );
+
+    console.log("Zooming manually to:", targetCameraPos, targetLookAtPos);
+
+    zoomingIn = true;
+    zoomProgress = 0;
+    waitForAnimationBeforeZoom = false;
+  }
+
   if (zoomingIn) {
     zoomProgress += delta;
     let t = Math.min(zoomProgress / zoomDuration, 1);
-
-    // Smoothstep easing:
-    t = t * t * (3 - 2 * t);
+    t = t * t * (3 - 2 * t); // smoothstep easing
 
     camera.position.lerpVectors(initialCameraPos, targetCameraPos, t);
-
     const lookAtPos = new THREE.Vector3().lerpVectors(initialLookAtPos, targetLookAtPos, t);
     camera.lookAt(lookAtPos);
 
@@ -203,4 +197,4 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-});
+}); 
