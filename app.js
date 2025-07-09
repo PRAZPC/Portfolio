@@ -3,9 +3,10 @@ particlesJS.load('particles-js', 'particles-config.json', function() {
   console.log('particles.js loaded');
 });
 
-let scene, camera, renderer, macbook, raycaster, mouse;
+let scene, camera, renderer, macbook, raycaster, mouse, controls;
 let mixer, clock, openAction;
 let lidIsOpen = false;
+let forceOpenLid = false; 
 
 // Zoom control variables
 let zoomingIn = false;
@@ -40,7 +41,7 @@ async function init() {
   renderer.setPixelRatio(window.devicePixelRatio);
   document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
   controls.minDistance = 10;
@@ -113,16 +114,34 @@ async function init() {
 }
 
 function onMouseMove(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  if (!forceOpenLid) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObject(macbook, true);
-  lidIsOpen = intersects.length > 0;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(macbook, true);
+    lidIsOpen = intersects.length > 0;
+  }
 }
 
 function onKeyDown(event) {
   if (event.key === 'Enter' && !zoomingIn) {
+    camera.position.copy(initialCameraPos);
+    camera.lookAt(initialLookAtPos);
+    
+    controls.update();
+    forceOpenLid = true;
+    lidIsOpen = true;
+    
+    // Force the lid to open immediately
+    if (mixer && openAction) {
+      openAction.reset();
+      openAction.paused = false;
+      openAction.play();
+      openAction.time = 0;
+      openAction.timeScale = 3; // Speed up the animation
+    }
+    
     zoomingIn = true;
     zoomProgress = 0;
   }
@@ -134,18 +153,27 @@ function animate() {
 
   if (mixer && openAction) {
     mixer.update(delta);
-
-    if (lidIsOpen) {
-      if (openAction.time < 6) {
-        openAction.paused = false;
-        openAction.time = Math.min(openAction.time + delta * 3, 6);
+    
+    // When forceOpenLid is true, let the animation play naturally
+    if (forceOpenLid) {
+      // Don't interfere with the animation, let it play
+      if (openAction.time >= openAction.getClip().duration) {
+        openAction.paused = true;
       }
     } else {
-      if (openAction.time > 0) {
-        openAction.paused = false;
-        openAction.time = Math.max(openAction.time - delta * 3, 0);
+      // Original mouse hover logic
+      if (lidIsOpen) {
+        if (openAction.time < 6) {
+          openAction.paused = false;
+          openAction.time = Math.min(openAction.time + delta * 3, 6);
+        }
       } else {
-        openAction.paused = true;
+        if (openAction.time > 0) {
+          openAction.paused = false;
+          openAction.time = Math.max(openAction.time - delta * 3, 0);
+        } else {
+          openAction.paused = true;
+        }
       }
     }
   }
