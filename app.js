@@ -10,8 +10,10 @@ let forceOpenLid = false;
 let exitTriggered = false;
 
 let zoomingIn = false;
+let zoomingOut = false;
 let zoomProgress = 0;
 const zoomDuration = 2;
+const zoomOutDuration = 3;
 
 const urlParams = new URLSearchParams(window.location.search);
 const isExitTriggered = urlParams.get('exit') === 'true';
@@ -23,8 +25,15 @@ let targetCameraPos = new THREE.Vector3();
 let targetLookAtPos = new THREE.Vector3();
 let waitForAnimationBeforeZoom = false;
 
-init();
 
+let zoomOutCameraPos = new THREE.Vector3();
+let zoomOutLookAtPos = new THREE.Vector3();
+
+
+let zoomOutStartCameraPos = new THREE.Vector3();
+let zoomOutStartLookAtPos = new THREE.Vector3();
+
+init();
 
 async function init() {
   scene = new THREE.Scene();
@@ -74,7 +83,6 @@ async function init() {
 
     scene.add(macbook);
 
-    
     targetLookAtPos.set(0, 3, 0);
     targetCameraPos.set(0, 10, 12);
 
@@ -91,16 +99,45 @@ async function init() {
       // If exit flag is set, start animation from 8.5 seconds
       if (isExitTriggered) {
         console.log('Exit triggered - starting animation from 8.5 seconds');
+
+        // Set camera to the zoom-in end position immediately
+        targetLookAtPos.set(-0.03, 10, -15);
+        targetCameraPos.set(
+          targetLookAtPos.x,
+          targetLookAtPos.y + 2.5,
+          targetLookAtPos.z + 6
+        );
+
+        // Position camera at the zoom-in end position
+        camera.position.copy(targetCameraPos);
+        camera.lookAt(targetLookAtPos);
+        controls.update();
+
         forceOpenLid = true;
         lidIsOpen = true;
         openAction.reset();
         openAction.paused = false;
         openAction.play();
-        openAction.time = 8.5; // Start from 8.5 seconds
-        openAction.timeScale = 1; // Normal speed for exit animation
+        openAction.time = 9; 
+        openAction.timeScale = 1; 
+
+        
+        zoomOutCameraPos.set(0, 25, 40); // Far away position
+        zoomOutLookAtPos.set(0, 10, 0); // Looking at center
+
+        zoomOutStartCameraPos.copy(camera.position);
+        zoomOutStartLookAtPos.copy(targetLookAtPos);
+
+        
+
+        // // Start zoom out after a short delay
+        setTimeout(() => {
+          console.log('Starting zoom out animation from screen position');
+          zoomingOut = true;
+          zoomProgress = 0;
+        }, 1); // when delay is longer it shows  flip 3d model why dont knoww hehhe
       }
     }
-    
 
     document.getElementById('loading-screen').style.display = 'none';
     document.addEventListener('mousemove', onMouseMove);
@@ -174,12 +211,10 @@ function animate() {
     }
   }
 
- 
   if (waitForAnimationBeforeZoom && openAction && openAction.time >= 0.5) {
-    
     targetLookAtPos.set(-0.03, 10, -15); // manual coordinates
 
-    // Offset camera slightly above and in front
+    
     targetCameraPos.set(
       targetLookAtPos.x,
       targetLookAtPos.y + 2.5,
@@ -208,10 +243,39 @@ function animate() {
     }
   }
 
+  // Handle zoom out animation for exit
+  if (zoomingOut) {
+    zoomProgress += delta;
+    let t = Math.min(zoomProgress / zoomOutDuration, 1);
+    t = t * t * (3 - 2 * t); // smoothstep easing
+
+    
+    camera.position.lerpVectors(zoomOutStartCameraPos, zoomOutCameraPos, t);
+
+    const lerpedPos = new THREE.Vector3().lerpVectors(zoomOutStartCameraPos, zoomOutCameraPos, t);
+    const lookAtPos = new THREE.Vector3().lerpVectors(zoomOutStartLookAtPos, zoomOutLookAtPos, t);
+
+    let forward = new THREE.Vector3().subVectors(lookAtPos, lerpedPos);
+    if (forward.length() < 0.1) {
+      forward.set(0, 0, 0); // assume camera looks down -Z
+      forward.applyQuaternion(camera.quaternion);
+      forward.multiplyScalar(10);
+    }
+
+    const correctedLookAt = new THREE.Vector3().addVectors(lerpedPos, forward);
+
+    camera.position.copy(lerpedPos);
+    camera.lookAt(correctedLookAt);
+
+    if (t >= 1) {
+      zoomingOut = false;
+      console.log('Zoom out animation complete');
+     
+    }
+  }
+
   renderer.render(scene, camera);
 }
-
-
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;

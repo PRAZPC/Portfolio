@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
     .zoom-out {
-        animation: zoomOut 0.8s forwards;
+        animation: zoomOut 3s forwards;
     }
 
     @keyframes zoomOut {
@@ -57,7 +57,7 @@
                 const command = inputField.value.trim();
                 inputField.value = "";
 
-                // Process command
+                
                 let response = `<span class="text-green-400">pra4c@terminal:~$</span> ${command}`;
 
                 if (command.toLowerCase() === "whoami") {
@@ -76,15 +76,18 @@
                     terminal.scrollTop = terminal.scrollHeight;
 
                     
+                    terminal.classList.add("zoom-out");
+
                     setTimeout(() => {
                         window.location.href = "index.html?exit=true";
-                    }, 1000); 
+                    }, 3000); 
                     return;
+
                 }else {
                     response += `<br><span class="text-red-400">Command not found. Try 'help'.</span>`;
                 }
 
-                // Add output to terminal
+               
                 terminal.innerHTML += `<p>${response}</p>`;
                 terminal.scrollTop = terminal.scrollHeight;
             }
