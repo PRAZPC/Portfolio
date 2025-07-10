@@ -7,10 +7,14 @@ let scene, camera, renderer, macbook, raycaster, mouse, controls;
 let mixer, clock, openAction;
 let lidIsOpen = false;
 let forceOpenLid = false;
+let exitTriggered = false;
 
 let zoomingIn = false;
 let zoomProgress = 0;
 const zoomDuration = 2;
+
+const urlParams = new URLSearchParams(window.location.search);
+const isExitTriggered = urlParams.get('exit') === 'true';
 
 const initialCameraPos = new THREE.Vector3();
 const initialLookAtPos = new THREE.Vector3(0, 0, 0);
@@ -20,6 +24,7 @@ let targetLookAtPos = new THREE.Vector3();
 let waitForAnimationBeforeZoom = false;
 
 init();
+
 
 async function init() {
   scene = new THREE.Scene();
@@ -82,7 +87,20 @@ async function init() {
       openAction.time = 0;
       openAction.play();
       openAction.paused = true;
+
+      // If exit flag is set, start animation from 8.5 seconds
+      if (isExitTriggered) {
+        console.log('Exit triggered - starting animation from 8.5 seconds');
+        forceOpenLid = true;
+        lidIsOpen = true;
+        openAction.reset();
+        openAction.paused = false;
+        openAction.play();
+        openAction.time = 8.5; // Start from 8.5 seconds
+        openAction.timeScale = 1; // Normal speed for exit animation
+      }
     }
+    
 
     document.getElementById('loading-screen').style.display = 'none';
     document.addEventListener('mousemove', onMouseMove);
@@ -108,7 +126,7 @@ function onMouseMove(event) {
 }
 
 function onKeyDown(event) {
-  if (event.key === 'Enter' && !zoomingIn && !waitForAnimationBeforeZoom) {
+  if (event.key === 'Enter' && !zoomingIn && !waitForAnimationBeforeZoom && !isExitTriggered) {
     camera.position.copy(initialCameraPos);
     camera.lookAt(initialLookAtPos);
     controls.update();
@@ -193,8 +211,10 @@ function animate() {
   renderer.render(scene, camera);
 }
 
+
+
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-}); 
+});

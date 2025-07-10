@@ -6,6 +6,22 @@
 	
     <title>Interactive Terminal</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+    .zoom-out {
+        animation: zoomOut 0.8s forwards;
+    }
+
+    @keyframes zoomOut {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(0.1);
+            opacity: 0;
+        }
+    }
+</style>
 </head>
 <body class="bg-gray-900 text-white flex justify-center items-center h-screen">
 
@@ -50,8 +66,21 @@
                     terminal.innerHTML = "";
                     return;
                 } else if (command.toLowerCase() === "help") {
-                    response += `<br>Available commands: <span class="text-yellow-300">whoami, clear, help</span>`;
-                } else {
+                    response += `<br>Available commands: <span class="text-yellow-300">whoami, pra4c-age, clear, help, exit</span>`;
+                } else if (command.toLowerCase() == 'pra4c-age'){
+                    response += `<br><span class="text-blue-300"> 21 </span>`;
+                
+                } else if (command.toLowerCase() === "exit") {
+                    response += `<br><span class="text-blue-300">Closing laptop...</span>`;
+                    terminal.innerHTML += `<p>${response}</p>`;
+                    terminal.scrollTop = terminal.scrollHeight;
+
+                    
+                    setTimeout(() => {
+                        window.location.href = "index.html?exit=true";
+                    }, 1000); 
+                    return;
+                }else {
                     response += `<br><span class="text-red-400">Command not found. Try 'help'.</span>`;
                 }
 
