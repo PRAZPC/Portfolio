@@ -1,12 +1,15 @@
+/* Base layout */
 body {
   margin: 0;
   padding: 0;
   overflow: hidden;
   font-family: Arial, sans-serif;
-  background: black;
+  background: radial-gradient(ellipse at center,
+              #0b0c1a 0%, #0b0d1f 30%, #050510 60%, #010109 100%);
   color: white;
 }
 
+/* Particles background */
 #particles-js {
   position: fixed;
   top: 0;
@@ -14,6 +17,27 @@ body {
   width: 100%;
   height: 100%;
   z-index: 0;
+
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(100, 100, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(255, 150, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 80%, rgba(120, 219, 226, 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, #0d0f2a 0%, #050512 100%);
+
+  animation: nebula-drift 40s ease-in-out infinite alternate;
+  background-size: 100% 100%;
+}
+
+@keyframes nebula-drift {
+  0% {
+    background-position: 0% 0%, 100% 0%, 0% 100%, 0% 0%;
+  }
+  50% {
+    background-position: 100% 50%, 0% 50%, 50% 0%, 0% 0%;
+  }
+  100% {
+    background-position: 0% 100%, 100% 100%, 100% 0%, 0% 0%;
+  }
 }
 
 #canvas-container {
@@ -32,7 +56,9 @@ body {
   text-align: center;
   z-index: 2;
   font-size: 14px;
-  text-shadow: 0 0 8px #000;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.8),
+               0 0 25px rgba(120, 219, 226, 0.5);
+  color: #e0e6ed;
 }
 
 .loading-bar {
@@ -45,6 +71,8 @@ body {
   transform: translate(-50%, -50%);
   overflow: hidden;
   z-index: 3;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(120, 219, 226, 0.5);
 }
 
 .loading-bar::before {
@@ -53,8 +81,13 @@ body {
   left: -50%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  background: linear-gradient(90deg, transparent,
+              rgba(3, 169, 244, 0.8),
+              rgba(255, 255, 255, 0.9),
+              rgba(3, 169, 244, 0.8),
+              transparent);
   animation: loading 2s infinite;
+  border-radius: 10px;
 }
 
 @keyframes loading {
