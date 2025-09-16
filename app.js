@@ -16,7 +16,7 @@ const zoomDuration = 2;
 const zoomOutDuration = 3;
 
 const urlParams = new URLSearchParams(window.location.search);
-const isExitTriggered = urlParams.get('exit') === 'true';
+let isExitTriggered = urlParams.get('exit') === 'true';
 
 const initialCameraPos = new THREE.Vector3();
 const initialLookAtPos = new THREE.Vector3(0, 0, 0);
@@ -25,10 +25,8 @@ let targetCameraPos = new THREE.Vector3();
 let targetLookAtPos = new THREE.Vector3();
 let waitForAnimationBeforeZoom = false;
 
-
 let zoomOutCameraPos = new THREE.Vector3();
 let zoomOutLookAtPos = new THREE.Vector3();
-
 
 let zoomOutStartCameraPos = new THREE.Vector3();
 let zoomOutStartLookAtPos = new THREE.Vector3();
@@ -121,21 +119,18 @@ async function init() {
         openAction.time = 9; 
         openAction.timeScale = 1; 
 
-        
         zoomOutCameraPos.set(0, 25, 40); // Far away position
         zoomOutLookAtPos.set(0, 10, 0); // Looking at center
 
         zoomOutStartCameraPos.copy(camera.position);
         zoomOutStartLookAtPos.copy(targetLookAtPos);
 
-        
-
-        // // Start zoom out after a short delay
+        // Start zoom out after a short delay
         setTimeout(() => {
           console.log('Starting zoom out animation from screen position');
           zoomingOut = true;
           zoomProgress = 0;
-        }, 1); // when delay is longer it shows  flip 3d model why dont knoww hehhe
+        }, 1);
       }
     }
 
@@ -214,7 +209,6 @@ function animate() {
   if (waitForAnimationBeforeZoom && openAction && openAction.time >= 0.5) {
     targetLookAtPos.set(-0.03, 10, -15); // manual coordinates
 
-    
     targetCameraPos.set(
       targetLookAtPos.x,
       targetLookAtPos.y + 2.5,
@@ -249,7 +243,6 @@ function animate() {
     let t = Math.min(zoomProgress / zoomOutDuration, 1);
     t = t * t * (3 - 2 * t); // smoothstep easing
 
-    
     camera.position.lerpVectors(zoomOutStartCameraPos, zoomOutCameraPos, t);
 
     const lerpedPos = new THREE.Vector3().lerpVectors(zoomOutStartCameraPos, zoomOutCameraPos, t);
@@ -257,7 +250,7 @@ function animate() {
 
     let forward = new THREE.Vector3().subVectors(lookAtPos, lerpedPos);
     if (forward.length() < 0.1) {
-      forward.set(0, 0, 0); // assume camera looks down -Z
+      forward.set(0, 0, 0);
       forward.applyQuaternion(camera.quaternion);
       forward.multiplyScalar(10);
     }
@@ -267,10 +260,36 @@ function animate() {
     camera.position.copy(lerpedPos);
     camera.lookAt(correctedLookAt);
 
-    if (t >= 1) {
+    // Check if both camera zoom-out AND MacBook lid closing animations are complete
+    const cameraAnimationComplete = t >= .8;
+    const lidAnimationComplete = openAction && openAction.time >= openAction.getClip().duration*.8;
+    
+    if (cameraAnimationComplete && lidAnimationComplete) {
       zoomingOut = false;
-      console.log('Zoom out animation complete');
-     
+      console.log('Both zoom out and lid closing animations complete clearing URL parameter');
+      
+      // Clear the URL parameter and reload the page to reset everything
+      const url = new URL(window.location);
+      url.searchParams.delete('exit');
+      window.history.replaceState({}, '', url);
+      forceOpenLid = false;
+      lidIsOpen = false;
+      exitTriggered = false;
+      isExitTriggered = false; 
+      
+      
+      camera.position.copy(initialCameraPos);
+      camera.lookAt(initialLookAtPos);
+      controls.update();
+      
+      
+      if (openAction) {
+        openAction.reset();
+        openAction.time = 0;
+        openAction.paused = true;
+        openAction.play();
+        openAction.paused = true;
+      }
     }
   }
 
